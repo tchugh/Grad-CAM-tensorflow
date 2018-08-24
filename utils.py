@@ -42,7 +42,7 @@ def resnet_preprocess(resized_inputs):
 
 # returns image of shape [224, 224, 3]
 # [height, width, depth]
-def load_image(path, normalize=True):
+def load_image(path, normalize=True, size=299):
     """
     args:
         normalize: set True to get pixel value of 0~1
@@ -60,8 +60,8 @@ def load_image(path, normalize=True):
     yy = int((img.shape[0] - short_edge) / 2)
     xx = int((img.shape[1] - short_edge) / 2)
     crop_img = img[yy: yy + short_edge, xx: xx + short_edge]
-    # resize to 224, 224
-    resized_img = skimage.transform.resize(crop_img, (224, 224), preserve_range=True) # do not normalize at transform. 
+    # resize to size, size
+    resized_img = skimage.transform.resize(crop_img, (size, size), preserve_range=True) # do not normalize at transform.
     return resized_img
 
 # returns the top1 string
@@ -81,7 +81,7 @@ def print_prob(prob, file_path):
 
 
 
-def visualize(image, conv_output, conv_grad, gb_viz):
+def visualize(image, conv_output, conv_grad, gb_viz, size):
     output = conv_output           # [7,7,512]
     grads_val = conv_grad          # [7,7,512]
     print("grads_val shape:", grads_val.shape)
@@ -98,7 +98,7 @@ def visualize(image, conv_output, conv_grad, gb_viz):
     # Passing through ReLU
     cam = np.maximum(cam, 0)
     cam = cam / np.max(cam) # scale 0 to 1.0
-    cam = resize(cam, (224,224), preserve_range=True)
+    cam = resize(cam, (size, size), preserve_range=True)
 
     img = image.astype(float)
     img -= np.min(img)
@@ -109,15 +109,13 @@ def visualize(image, conv_output, conv_grad, gb_viz):
     # cam = np.float32(cam) + np.float32(img)
     # cam = 255 * cam / np.max(cam)
     # cam = np.uint8(cam)
-              
-    
-    fig = plt.figure()    
-    ax = fig.add_subplot(111)
+
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(221)
     imgplot = plt.imshow(img)
     ax.set_title('Input Image')
-    
-    fig = plt.figure(figsize=(12, 16))    
-    ax = fig.add_subplot(131)
+
+    ax = fig.add_subplot(222)
     imgplot = plt.imshow(cam_heatmap)
     ax.set_title('Grad-CAM')    
     
@@ -129,7 +127,7 @@ def visualize(image, conv_output, conv_grad, gb_viz):
     gb_viz -= np.min(gb_viz)
     gb_viz /= gb_viz.max()
 
-    ax = fig.add_subplot(132)
+    ax = fig.add_subplot(223)
     imgplot = plt.imshow(gb_viz)
     ax.set_title('guided backpropagation')
     
@@ -139,7 +137,7 @@ def visualize(image, conv_output, conv_grad, gb_viz):
             gb_viz[:, :, 1] * cam,
             gb_viz[:, :, 2] * cam,
         ))            
-    ax = fig.add_subplot(133)
+    ax = fig.add_subplot(224)
     imgplot = plt.imshow(gd_gb)
     ax.set_title('guided Grad-CAM')
 
